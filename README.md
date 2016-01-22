@@ -1,9 +1,10 @@
-#arduino-energy-monitor
+# arduino-energy-monitor
+Early stages of development. Check back later for more info :)
 
-##Working features
+## Working features
 - Assigns address via DHCP and prints it on the LCD.
 
-##TODO
+## TODO
 - Read temperature and humidity sensor data.
 - Read energy sensor data.
 - Hold a running average of all sensors (especially energy) in memory to avoid major spikes in readings.
