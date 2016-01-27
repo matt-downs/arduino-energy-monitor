@@ -1,65 +1,130 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include <Ethernet.h>
+#include <DHT.h>
 
+#define DisplayUpdateInterval 5000
+#define SensorUpdateInterval 1000
+
+DHT dht(2, DHT11);
 LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
-// assign a MAC address for the ethernet controller.
-// fill in your address here:
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-
-unsigned long interval=2000; // the time we need to wait
-unsigned long previousMillis=0; // millis() returns an unsigned long.
-
-// Initialize the Ethernet server library
 EthernetServer server(80);
+
+unsigned long prevDisplayUpdate = 0;
+unsigned long prevSensorUpdate = 0;
+
+float temperature = 0;
+float humidity = 0;
+float energy = 0;
+
+int disp = 0;
 
 void setup() {
   lcd.init();
   lcd.backlight();
+  lcd.setCursor(0,0);
+  lcd.print("Loading...");
   
-  // start the Ethernet connection and the server:
+  dht.begin();
+  
   Ethernet.begin(mac);
   server.begin();
 
-  Serial.begin(9600);
-
-  // give the sensor and Ethernet shield time to set up:
   delay(1000);
-  
-  printIPAddress();
 }
 
 void loop() {
-  unsigned long currentMillis = millis(); // grab current time
-  if ((unsigned long)(currentMillis - previousMillis) >= interval) {
-    updateSensors();
-  previousMillis = millis();
+  unsigned long currentMillis = millis();
+  
+  // Update the display every n seconds
+  if ((unsigned long)(currentMillis - prevDisplayUpdate) >= DisplayUpdateInterval) {
+    updateScreen();
+    // Also make sure the network connection is maintained
+    Ethernet.maintain();
+    prevDisplayUpdate = millis();
   }
-  Ethernet.maintain();
+
+  // Update the sensors every n seconds
+  if ((unsigned long)(currentMillis - prevSensorUpdate) >= SensorUpdateInterval) {
+    updateSensors();
+    prevSensorUpdate = millis();
+  }
+    
   // listen for incoming Ethernet connections:
   listenForEthernetClients();
 }
 
+// *********************************************************************
+// Updates the sensors
+// *********************************************************************
 void updateSensors() {
-  Serial.print("test");
+  temperature = dht.readTemperature();
+  humidity = dht.readHumidity();
+  energy = 123.43;
 }
 
+// *********************************************************************
+// Updates the display
+// *********************************************************************
+void updateScreen() {
+  lcd.clear();
+  printIPAddress();
+  
+  if (disp == 0) printTemperature();
+  if (disp == 1) printHumidity();
+  if (disp == 2) printEnergy();
+
+  disp++;
+  if (disp == 3) disp = 0;
+}
+
+// *********************************************************************
+// Prints the current temperature on the bottom line of the display
+// *********************************************************************
+void printTemperature()
+{
+  lcd.setCursor(0,1);
+  lcd.print((String)temperature + " C");
+}
+
+// *********************************************************************
+// Prints the current humidity on the bottom line of the display
+// *********************************************************************
+void printHumidity()
+{
+  lcd.setCursor(0,1);
+  lcd.print((String)humidity + " %");
+}
+
+// *********************************************************************
+// Prints the current energy usage on the bottom line of the display
+// *********************************************************************
+void printEnergy()
+{
+  lcd.setCursor(0,1);
+  lcd.print((String)energy + " watts");
+}
+
+// *********************************************************************
+// Prints the current IP address on top line of the display
+// *********************************************************************
 void printIPAddress()
 {
-  lcd.clear();
   String ip;
   
   for (byte i = 0; i < 4; i++) {
     ip+= Ethernet.localIP()[i];
     if (i != 3) ip += ".";
   }
+  
   lcd.setCursor(0,0);
   lcd.print(ip);
-  
-  Serial.println();
 }
-
+// *********************************************************************
+//
+// *********************************************************************
 void listenForEthernetClients() {
   // listen for incoming clients
   EthernetClient client = server.available();
@@ -77,10 +142,10 @@ void listenForEthernetClients() {
           client.println("HTTP/1.1 200 OK");
           client.println("Content-Type: application/json");
           client.println();
-          // print the current readings, in HTML format:
-          client.print("{energy: 500,");
-          client.print("temp: 30,");
-          client.print("humidity: 50}");
+          // print the current readings, in JSON format:
+          client.print("{energy: " + (String)energy + ",");
+          client.print("temp: " + (String)temperature + ",");
+          client.print("humidity: " + (String)humidity + "}");
           break;
         }
         if (c == '\n') {
