@@ -3,22 +3,22 @@
 #include <Ethernet.h>
 #include <DHT.h>
 
+// Expose some settings for super easy access
 #define DisplayUpdateInterval 5000
 #define SensorUpdateInterval 1000
 
 DHT dht(2, DHT11);
-LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x27,20,4);
 
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
 EthernetServer server(80);
 
+// Initialise ALL the variables! (mostly)
 unsigned long prevDisplayUpdate = 0;
 unsigned long prevSensorUpdate = 0;
-
 float temperature = 0;
 float humidity = 0;
 float energy = 0;
-
 int disp = 0;
 
 void setup() {
@@ -71,40 +71,14 @@ void updateSensors() {
 void updateScreen() {
   lcd.clear();
   printIPAddress();
-  
-  if (disp == 0) printTemperature();
-  if (disp == 1) printHumidity();
-  if (disp == 2) printEnergy();
+
+  lcd.setCursor(0,1);
+  if (disp == 0) lcd.print((String)temperature + " C");
+  if (disp == 1) lcd.print((String)humidity + " %");
+  if (disp == 2) lcd.print((String)energy + " watts");
 
   disp++;
   if (disp == 3) disp = 0;
-}
-
-// *********************************************************************
-// Prints the current temperature on the bottom line of the display
-// *********************************************************************
-void printTemperature()
-{
-  lcd.setCursor(0,1);
-  lcd.print((String)temperature + " C");
-}
-
-// *********************************************************************
-// Prints the current humidity on the bottom line of the display
-// *********************************************************************
-void printHumidity()
-{
-  lcd.setCursor(0,1);
-  lcd.print((String)humidity + " %");
-}
-
-// *********************************************************************
-// Prints the current energy usage on the bottom line of the display
-// *********************************************************************
-void printEnergy()
-{
-  lcd.setCursor(0,1);
-  lcd.print((String)energy + " watts");
 }
 
 // *********************************************************************
