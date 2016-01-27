@@ -3,7 +3,6 @@
 #include <Ethernet.h>
 #include <DHT.h>
 
-// Expose some settings for super easy access
 #define DisplayUpdateInterval 5000
 #define SensorUpdateInterval 1000
 
@@ -117,9 +116,9 @@ void listenForEthernetClients() {
           client.println("Content-Type: application/json");
           client.println();
           // print the current readings, in JSON format:
-          client.print("{energy: " + (String)energy + ",");
-          client.print("temp: " + (String)temperature + ",");
-          client.print("humidity: " + (String)humidity + "}");
+          client.print("{\"energy\": " + (String)energy + ",");
+          client.print("\"temp\": " + (String)temperature + ",");
+          client.print("\"humidity\": " + (String)humidity + "}");
           break;
         }
         if (c == '\n') {
